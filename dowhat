@@ -157,12 +157,13 @@ def save():
                 lines.pop(0)
 
 def close():
-    os.system('setterm -cursor on')
+    #os.system('setterm -cursor on')
     exit(0)
 
 # ========== #
 topBanner()
-os.system('setterm -cursor off')
+#os.system('setterm -cursor off')
+# FIXME figure out how to hide the cursor for macos
 startLines = readLines()
 lines = []
 # read in initiallines, apply filters
