@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+import sys
+import pathlib
+from os.path import expanduser
+
+DIR_NAME = expanduser("~") + "/.doit/"
+LOG_NAME = "doItLog.txt"
+NO_MESSAGE = "there is no message"
+args = sys.argv
+args.pop(0)
+subject = ""
+message = ""
+
+#if log doesn't exist, make it
+pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True) 
+
+#check for blank message
+if len(args) == 0:
+    print(NO_MESSAGE)
+    sys.exit()
+
+#check for "-" in first word
+if args[0][0] == "-":
+
+    #check for blank message
+    if len(args) == 1:
+        print(NO_MESSAGE)
+        sys.exit()
+
+    subject = args[0][1:]
+    args.pop(0)
+
+else:
+    
+    subject = "general"
+
+message = " ".join(args)
+
+#write subject + message to text file
+with open(DIR_NAME + LOG_NAME, "a+") as text_file:
+    text_file.write(subject + " " + message + "\n")
+
+print("task added (" + subject + ")")

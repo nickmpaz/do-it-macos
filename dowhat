@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+
+import sys, termios, tty, os, time, subprocess, copy, pathlib
+from os.path import expanduser
+
+#if not running in screen session, run in screen then exit
+batcmd="echo \"$STY\""
+result = str(subprocess.check_output(batcmd, shell=True))
+if not "doit" in result:
+    cmd = 'screen -S doit ' + ' '.join(sys.argv)
+    os.system(cmd)
+    exit()
+
+#globals
+MAX_HEIGHT = 11
+MID_HEIGHT = int(MAX_HEIGHT / 2)
+DIR_NAME = expanduser("~") + "/.doit/"
+LOG_NAME = "doItLog.txt"
+
+#if log doesn't exist, make it
+pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True) 
+
+#init
+focus = 0
+linesLength = 0
+
+def topBanner():
+    
+    banner = r"""
+          _         _ _     _   ___                        ___ 
+         | |       (_) |   | | |  _|                      |_  |
+       __| | ___    _| |_  | | | |    w - UP    q - QUIT    | |
+      / _` |/ _ \  | | __| | | | |    s - DOWN  e - S & Q   | |
+     | (_| | (_) | | | |_  |_| | |_     space - TOGGLE     _| |
+      \__,_|\___/  |_|\__| (_) |___|                      |___|
+     __________________________________________________________                                 
+    """
+    print(banner)
+
+
+def readLines():
+    try:
+        with open(DIR_NAME + LOG_NAME, "r+") as f:
+            content = f.readlines()
+        content = [x.strip() for x in content] 
+        dictionary = []
+        for c in content:
+            dictionary.append([c, False])
+        return dictionary
+    except:
+        return []
+
+def makeLines():
+  
+    if linesLength == 0:
+        for i in range(MAX_HEIGHT):
+            if i == MID_HEIGHT - 1:
+                print("     nothing to do...")
+            else:
+                print()
+        print("     __________________________________________________________")
+        return
+    
+    lowerBound = 0
+    upperBound = 0
+    
+    if focus < MID_HEIGHT or linesLength <= MAX_HEIGHT:
+        lowerBound = 0
+        upperBound = MAX_HEIGHT
+    elif focus >= linesLength - MID_HEIGHT:
+        lowerBound = linesLength - MAX_HEIGHT
+        upperBound = linesLength
+    else:
+        lowerBound = focus - MID_HEIGHT
+        upperBound = focus + MID_HEIGHT +1
+
+    message = ""
+
+    for i in range(lowerBound, upperBound):
+        
+        if (i < linesLength):
+            #handle the subject
+            firstWord = lines[i][0].split(' ', 1)[0]
+            if len(firstWord) <= 10:
+                for j in range(10 - len(firstWord)):
+                    message = message + " "
+                message = message + firstWord
+            else:
+                message = message + firstWord[0:10]
+            #handle the focus
+            if i == focus:
+                message = message + ' | => '
+            else:
+                message = message + ' |    '
+            #handle completion
+            if lines[i][1] == True:
+                message = message + "[*] "
+            else:
+                message = message + "[ ] "
+
+            message = message + lines[i][0].split(' ', 1)[1] + "\n"
+
+        else:
+
+            message = message + "\n"
+    message = message + "     __________________________________________________________"
+    print(message, end = "")
+        
+def clearLines():
+
+    up = '\"\\033[A\"'
+    clear = '\"\\033[K\"'
+    cmd = 'echo ' + '\r'
+    for i in range(MAX_HEIGHT + 1):
+        cmd = cmd + up + clear
+    os.system(cmd)
+
+def incrementFocus():
+    global focus
+    if focus < linesLength - 1:
+        focus+=1
+        return True
+    else:
+        return False
+
+def decrementFocus():
+    global focus
+    if focus > 0:
+        focus-=1
+        return True
+    else:
+        return False
+
+def toggleFocus():
+    global lines
+    lines[focus][1] = not lines[focus][1]
+
+def getch():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+
+def save():
+    with open(DIR_NAME + LOG_NAME, "w") as f:
+        for line in startLines:
+            if line[0] != "":
+                f.write(line[0] + "\n")
+
+            else:
+                if lines[0][1] == False:
+                    f.write(lines[0][0] + "\n")
+                lines.pop(0)
+
+def close():
+    os.system('setterm -cursor on')
+    exit(0)
+
+# ========== #
+topBanner()
+os.system('setterm -cursor off')
+startLines = readLines()
+lines = []
+# read in initiallines, apply filters
+if len(sys.argv) == 1:
+    lines = copy.deepcopy(startLines)
+    startLines = [["", False]] * len(startLines)
+
+else:
+    #set filter
+    subFilter = sys.argv[1]
+    for line in startLines:
+        if line[0].split(' ',1)[0] == subFilter:
+            lines.append([line[0], line[1]])
+            line[0] = ""
+    #for line in startLines
+    #if first word == filter
+    #add line to lines
+    #set line in startlines to ""
+
+linesLength = len(lines)
+
+makeLines()
+
+while True:
+
+    char = getch()
+ 
+    if (char == "q"):
+        close()
+
+    elif (char == "e"):
+        save()
+        close()
+ 
+    elif (char == "w"):
+        if decrementFocus():
+            clearLines()
+            makeLines()
+
+    elif (char == "s"):
+        if incrementFocus():
+            clearLines()
+            makeLines()
+
+    elif (char == " "):
+        toggleFocus()
+        clearLines()
+        makeLines()
+
+
