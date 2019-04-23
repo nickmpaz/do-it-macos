@@ -23,6 +23,7 @@ pathlib.Path(DIR_NAME).mkdir(parents=True, exist_ok=True)
 #init
 focus = 0
 linesLength = 0
+subFilter = "all"
 
 def topBanner():
     
@@ -58,7 +59,7 @@ def makeLines():
                 print("     nothing to do...")
             else:
                 print()
-        print("     __________________________________________________________")
+        print("    __________________________________________________________")
         return
     
     lowerBound = 0
@@ -74,7 +75,7 @@ def makeLines():
         lowerBound = focus - MID_HEIGHT
         upperBound = focus + MID_HEIGHT +1
 
-    message = ""
+    message = "     (%s) %d of %d item(s)\n\n" % (subFilter, focus + 1, linesLength)
 
     for i in range(lowerBound, upperBound):
         
@@ -111,7 +112,7 @@ def clearLines():
     up = '\"\\033[A\"'
     clear = '\"\\033[K\"'
     cmd = 'echo ' + '\r'
-    for i in range(MAX_HEIGHT + 1):
+    for i in range(MAX_HEIGHT + 3):
         cmd = cmd + up + clear
     os.system(cmd)
 
@@ -161,9 +162,7 @@ def close():
     exit(0)
 
 # ========== #
-topBanner()
 #os.system('setterm -cursor off')
-# FIXME figure out how to hide the cursor for macos
 startLines = readLines()
 lines = []
 # read in initiallines, apply filters
@@ -184,7 +183,7 @@ else:
     #set line in startlines to ""
 
 linesLength = len(lines)
-
+topBanner()
 makeLines()
 
 while True:
