@@ -83,9 +83,7 @@ def makeLines():
             #handle the subject
             firstWord = lines[i][0].split(' ', 1)[0]
             if len(firstWord) <= 10:
-                for j in range(10 - len(firstWord)):
-                    message = message + " "
-                message = message + firstWord
+                message = message + firstWord.rjust(10)
             else:
                 message = message + firstWord[0:10]
             #handle the focus
